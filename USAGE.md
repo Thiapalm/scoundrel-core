@@ -1,64 +1,77 @@
 # Guia de Uso: ScoundrelCore
 
-Este guia explica como integrar e utilizar a biblioteca `ScoundrelCore` em seu projeto.
+Bem-vindo ao **ScoundrelCore**! Esta biblioteca é o "cérebro" por trás de um jogo de cartas estilo *dungeon crawler* (exploração de masmorra). 
 
-## Arquitetura Principal
+Se você é um desenvolvedor querendo criar um jogo ou apenas alguém curioso sobre como isso funciona, este guia vai te ajudar.
 
-A biblioteca é estruturada em torno de um motor de estados de jogo baseado na classe `GameLogic`.
+---
 
-## Passos para Integração
+## 🎮 O que é o Scoundrel?
 
-### 1. Implementar a lógica do jogo
-Você deve herdar de `GameLogic` e implementar os métodos das fases do jogo (como `initialize_game`, `start_turn`, `combat`, etc.).
+O Scoundrel é um jogo de sobrevivência e estratégia jogado com um baralho comum de 52 cartas. O seu objetivo é atravessar uma masmorra cheia de perigos e sair vivo!
+
+### Como funciona o jogo:
+1.  **A Masmorra:** O baralho é a sua masmorra. Ele contém monstros, armas e poções.
+2.  **As Salas:** Você entra em salas com **4 cartas** por vez.
+3.  **Suas Escolhas:** Em cada sala, você deve lidar com as cartas (lutar contra monstros, equipar armas ou beber poções). Você pode pular uma sala se achar muito perigosa, mas não pode pular duas vezes seguidas!
+4.  **Vida (PV):** Você começa com 20 Pontos de Vida. Se chegar a 0, o jogo acaba.
+
+### As Cartas:
+*   **👹 Monstros (Paus e Espadas):** Causam dano. Você pode lutar com as mãos (perde vida) ou usar uma arma.
+*   **⚔️ Armas (Ouros):** Ajudam a derrotar monstros sem perder tanta vida. Mas atenção: as armas têm "memória" e só podem derrotar monstros cada vez mais fracos.
+*   **🧪 Poções (Copas):** Recuperam sua vida (até o máximo de 20).
+
+---
+
+## 🛠️ Para Desenvolvedores: Como usar esta Biblioteca
+
+O **ScoundrelCore** fornece toda a lógica matemática e as regras do jogo. Você só precisa construir a "roupa" (a interface visual) para ele.
+
+### 1. Os Três Pilares
+Para fazer o jogo rodar, você interage com três partes principais:
+*   **GameLogic:** É o motor do jogo. Ele decide o que acontece quando você ataca um monstro ou entra numa sala.
+*   **GameContext:** É a "memória" do jogo. Ele guarda quanta vida o jogador tem, qual arma está equipada e quais cartas estão na sala.
+*   **UserInterface:** É como o jogo fala com você. Você deve criar uma classe que mostre as mensagens na tela e receba os comandos do jogador.
+
+### 2. Exemplo Simples de Integração
+
+Aqui está um roteiro de como começar no seu código C++:
 
 ```cpp
 #include "GameLogic.h"
-
-class MyGameLogic : public GameLogic {
-public:
-    GamePhase initialize_game(GameContext &ctx) override {
-        // Inicialização customizada
-        return GamePhase::START_TURN;
-    }
-    // Implemente as demais fases...
-};
-```
-
-### 2. Implementar a interface de usuário (UI)
-A biblioteca requer uma implementação da interface de usuário (`UserInterface.h`) para se comunicar com o sistema de exibição.
-
-```cpp
 #include "ui/UserInterface.h"
 
-class MyUI : public UserInterface {
-    // Implemente os métodos virtuais de exibição e entrada
+// 1. Crie sua Interface (como o jogador vê o jogo)
+class MinhaInterface : public UserInterface {
+    void display_room(const GameContext& ctx) override {
+        // Código para mostrar as cartas na tela
+    }
+    // ... outros métodos de exibição
 };
-```
-
-### 3. Iniciar o Loop de Jogo
-Use a factory estática para criar sua lógica e conecte seus componentes:
-
-```cpp
-#include "GameLogic.h"
 
 int main() {
-    // 1. Criar a lógica
+    // 2. Inicialize o Motor do Jogo
     auto game = GameLogic::create(GameType::DEFAULT);
     
-    // 2. Definir a UI
-    MyUI my_ui;
-    game->set_interface(&my_ui);
+    // 3. Conecte sua Interface
+    MinhaInterface ui;
+    game->set_interface(&ui);
     
-    // 3. Configurar contexto (necessário instanciar GameContext)
-    // game->set_context(std::make_unique<GameContext>(...));
-
-    // 4. Rodar o loop
+    // 4. Comece a aventura!
     game->run_game_loop();
     
     return 0;
 }
 ```
 
-## Pontos Importantes
-- **AuthManager & PersistenceManager**: Utilize os métodos estáticos `get_current_auth_manager()` e `get_persistence_manager()` na classe `GameLogic` para acessar funcionalidades de sistema conforme necessário.
-- **Contexto**: O `GameContext` mantém o estado atual dos jogadores, inventário e mundo. Certifique-se de preenchê-lo corretamente antes de iniciar o `run_game_loop`.
+---
+
+## 🌟 Recursos Avançados
+*   **Classes de Personagem:** Você pode jogar como **Guerreiro**, **Curandeiro** ou **Camponês**, cada um com habilidades especiais.
+*   **Sistema de Persistência:** Salve recordes e configurações automaticamente.
+*   **Internacionalização (i18n):** Suporte nativo para múltiplos idiomas (Português, Inglês, Espanhol).
+
+---
+
+## 📜 Licença e Créditos
+O ScoundrelCore é baseado nas regras originais do jogo Scoundrel de Zach Gage e Kurt Bieg.
