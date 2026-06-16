@@ -78,6 +78,7 @@ public:
     void equip_weapon(std::unique_ptr<Card> new_weapon_card);
     void slay_monster_with_weapon(std::unique_ptr<Card> monster_card);
     void fight_monster_barehanded(std::unique_ptr<Card> monster_card);
+    void banish_monster(std::unique_ptr<Card> monster_card);
     void consume_potion(std::unique_ptr<Card> potion_card);
     void skip_current_room();
     void prepare_new_room();

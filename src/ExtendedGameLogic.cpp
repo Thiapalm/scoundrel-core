@@ -22,6 +22,9 @@ GamePhase ExtendedGameLogic::initialize_game(GameContext &ctx)
         case 2:
             chosen_class = PlayerClassType::WARRIOR;
             break;
+        case 3:
+            chosen_class = PlayerClassType::WIZARD;
+            break;
         case 0:
         default:
             chosen_class = PlayerClassType::PEASANT;
