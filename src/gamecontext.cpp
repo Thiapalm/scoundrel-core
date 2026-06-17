@@ -75,12 +75,25 @@ void GameContext::fight_monster_barehanded(std::unique_ptr<Card> monster_card) {
     actions_taken++;
 }
 
+void GameContext::banish_monster(std::unique_ptr<Card> monster_card) {
+    auto* monster = dynamic_cast<Monster*>(monster_card.get());
+    if (!monster) return;
+
+    dungeon->return_card(std::move(monster_card));
+    actions_taken++;
+}
+
 void GameContext::consume_potion(std::unique_ptr<Card> potion_card) {
     auto* potion = dynamic_cast<Potion*>(potion_card.get());
     if (!potion) return;
 
     int potion_value = potion->drink_potion();
-    if (!potion_used) {
+    bool can_heal = !potion_used;
+    if (player->player_class && player->player_class->can_use_multiple_potions()) {
+        can_heal = true;
+    }
+
+    if (can_heal) {
         player->gain_life(potion_value);
     }
     

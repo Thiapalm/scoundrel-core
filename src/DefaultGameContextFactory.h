@@ -6,6 +6,7 @@
 #include "AttachWeaponAction.h"
 #include "NewRoomAction.h"
 #include "AttackMonsterNoWeaponAction.h"
+#include "BanishMonsterAction.h"
 #include <vector>
 
 class DefaultGameContextFactory : public GameContextFactory
@@ -43,6 +44,7 @@ private:
         actions.push_back(std::make_unique<DrinkPotionAction>());
         actions.push_back(std::make_unique<SkipRoomAction>());
         actions.push_back(std::make_unique<NewRoomAction>());
+        actions.push_back(std::make_unique<BanishMonsterAction>());
         return actions;
     }
 

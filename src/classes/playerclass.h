@@ -30,4 +30,6 @@ public:
 
     // Chamado quando o jogador causa dano
     virtual int modify_outgoing_damage(int base_damage) { return base_damage; }
+
+    virtual bool can_use_multiple_potions() const { return false; }
 };

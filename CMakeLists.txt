@@ -30,6 +30,7 @@ set(ACTION_SOURCES
     src/actions/DrinkPotionAction.cpp
     src/actions/NewRoomAction.cpp
     src/actions/SkipRoomAction.cpp
+    src/actions/BanishMonsterAction.cpp
 )
 
 set(CORE_HEADERS
@@ -60,9 +61,11 @@ set(CORE_HEADERS
     src/actions/DrinkPotionAction.h
     src/actions/NewRoomAction.h
     src/actions/SkipRoomAction.h
+    src/actions/BanishMonsterAction.h
     src/classes/HealerClass.h
     src/classes/PeasantClass.h
     src/classes/WarriorClass.h
+    src/classes/WizardClass.h
     src/classes/playerclass.h
     src/ui/UserInterface.h
     src/PurchaseRegistry.h
