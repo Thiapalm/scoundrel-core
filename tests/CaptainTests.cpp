@@ -146,6 +146,12 @@ TEST(CaptainTests, FleeingCaptainPassivePersists) {
     
     // Plague doctor was in skipped room and not killed, so passive should persist!
     EXPECT_TRUE(ctx.is_plague_doctor_active());
+
+    // Drink Potion 8 after skipping -> should heal only 4 because Plague Doctor is still active!
+    ctx.get_player()->set_current_life(10);
+    ctx.consume_potion(std::make_unique<Potion>(suit::Hearts, face::_8));
+    EXPECT_EQ(ctx.get_player()->current_life(), 14);
+    EXPECT_EQ(ctx.get_last_potion_value(), 4);
 }
 
 TEST(CaptainTests, KillingCaptainDeactivatesPassive) {

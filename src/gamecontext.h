@@ -76,7 +76,11 @@ public:
     bool is_plague_doctor_active() const {
         return type == GameType::EXTENDED && plague_doctor_revealed && !plague_doctor_killed;
     }
+    bool is_warlord(const Monster* m) const {
+        return m && m->get_face() == face::_JK && m->get_suit() == suit::Spades;
+    }
     void check_captain_revealed();
+    void mark_captain_killed(const Monster* m);
     int get_monster_effective_damage(const Monster* monster) const;
     
     // Message Queue

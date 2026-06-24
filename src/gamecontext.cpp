@@ -60,13 +60,7 @@ void GameContext::slay_monster_with_weapon(std::unique_ptr<Card> monster_card) {
     int weapon_attack = player->modify_outgoing_damage(weapon->weapon_damage());
     int damage = std::max(0, get_monster_effective_damage(monster) - weapon_attack);
     
-    if (monster->get_face() == face::_JK) {
-        if (monster->get_suit() == suit::Spades) {
-            warlord_killed = true;
-        } else if (monster->get_suit() == suit::Clubs) {
-            plague_doctor_killed = true;
-        }
-    }
+    mark_captain_killed(monster);
 
     weapon->kill_monster(std::unique_ptr<Monster>(static_cast<Monster*>(monster_card.release())));
     player->lose_life(damage);
@@ -79,13 +73,7 @@ void GameContext::fight_monster_barehanded(std::unique_ptr<Card> monster_card) {
 
     int damage = get_monster_effective_damage(monster);
 
-    if (monster->get_face() == face::_JK) {
-        if (monster->get_suit() == suit::Spades) {
-            warlord_killed = true;
-        } else if (monster->get_suit() == suit::Clubs) {
-            plague_doctor_killed = true;
-        }
-    }
+    mark_captain_killed(monster);
 
     graveyard->put_into(std::move(monster_card));
     player->lose_life(damage);
@@ -106,7 +94,7 @@ void GameContext::consume_potion(std::unique_ptr<Card> potion_card) {
 
     int potion_value = potion->drink_potion();
     if (is_plague_doctor_active()) {
-        potion_value = potion_value / 2;
+        potion_value /= 2; // integer division automatically rounds down
     }
     bool can_heal = !potion_used;
     if (player->player_class && player->player_class->can_use_multiple_potions()) {
@@ -186,13 +174,22 @@ void GameContext::check_captain_revealed() {
     }
 }
 
+void GameContext::mark_captain_killed(const Monster* m) {
+    if (!m) return;
+    if (m->get_face() == face::_JK) {
+        if (m->get_suit() == suit::Spades) {
+            warlord_killed = true;
+        } else if (m->get_suit() == suit::Clubs) {
+            plague_doctor_killed = true;
+        }
+    }
+}
+
 int GameContext::get_monster_effective_damage(const Monster* monster) const {
     if (!monster) return 0;
     int base_damage = monster->get_damage();
-    if (type == GameType::EXTENDED && warlord_revealed && !warlord_killed) {
-        if (!(monster->get_face() == face::_JK && monster->get_suit() == suit::Spades)) {
-            base_damage += 2;
-        }
+    if (is_warlord_active() && !is_warlord(monster)) {
+        base_damage += 2;
     }
     return base_damage;
 }
