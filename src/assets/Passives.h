@@ -14,7 +14,7 @@ public:
         if (trigger == PassiveTrigger::START_ROOM) {
             auto player = ctx.get_player();
             if (player->current_life() < player->get_max_health()) {
-                player->gain_life(1);
+                player->set_current_life(std::min(player->get_max_health(), player->current_life() + 1));
                 auto& lm = LocalizationManager::instance();
                 ctx.add_message(lm.get_string(name()) + " " + lm.get_string("ui.passive.heal_message", {"1"}));
             }
