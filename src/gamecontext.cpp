@@ -58,8 +58,16 @@ void GameContext::slay_monster_with_weapon(std::unique_ptr<Card> monster_card) {
     if (!monster) return;
 
     int weapon_attack = player->modify_outgoing_damage(weapon->weapon_damage());
-    int damage = std::max(0, monster->get_damage() - weapon_attack);
+    int damage = std::max(0, get_monster_effective_damage(monster) - weapon_attack);
     
+    if (monster->get_face() == face::_JK) {
+        if (monster->get_suit() == suit::Spades) {
+            warlord_killed = true;
+        } else if (monster->get_suit() == suit::Clubs) {
+            plague_doctor_killed = true;
+        }
+    }
+
     weapon->kill_monster(std::unique_ptr<Monster>(static_cast<Monster*>(monster_card.release())));
     player->lose_life(damage);
     actions_taken++;
@@ -69,7 +77,16 @@ void GameContext::fight_monster_barehanded(std::unique_ptr<Card> monster_card) {
     auto* monster = dynamic_cast<Monster*>(monster_card.get());
     if (!monster) return;
 
-    int damage = monster->get_damage();
+    int damage = get_monster_effective_damage(monster);
+
+    if (monster->get_face() == face::_JK) {
+        if (monster->get_suit() == suit::Spades) {
+            warlord_killed = true;
+        } else if (monster->get_suit() == suit::Clubs) {
+            plague_doctor_killed = true;
+        }
+    }
+
     graveyard->put_into(std::move(monster_card));
     player->lose_life(damage);
     actions_taken++;
@@ -88,6 +105,9 @@ void GameContext::consume_potion(std::unique_ptr<Card> potion_card) {
     if (!potion) return;
 
     int potion_value = potion->drink_potion();
+    if (is_plague_doctor_active()) {
+        potion_value = potion_value / 2;
+    }
     bool can_heal = !potion_used;
     if (player->player_class && player->player_class->can_use_multiple_potions()) {
         can_heal = true;
@@ -119,6 +139,7 @@ void GameContext::skip_current_room() {
         cards.push_back(dungeon->get_card());
     
     room = std::make_unique<Room>(std::move(cards));
+    check_captain_revealed();
     room_skipped = true;
     potion_used = false;
     actions_taken = 0;
@@ -141,8 +162,37 @@ void GameContext::prepare_new_room() {
         cards.push_back(dungeon->get_card());
     
     room = std::make_unique<Room>(std::move(cards));
+    check_captain_revealed();
     room_skipped = false;
     potion_used = false;
     actions_taken = 0;
     player->on_pre_room(*this);
+}
+
+void GameContext::check_captain_revealed() {
+    if (type != GameType::EXTENDED) return;
+    if (!room) return;
+    for (int i = 0; i < room->cards_in_room(); ++i) {
+        const auto& card = room->look_card(i);
+        if (card.getType() == CardType::Monster) {
+            if (card.get_face() == face::_JK) {
+                if (card.get_suit() == suit::Spades) {
+                    warlord_revealed = true;
+                } else if (card.get_suit() == suit::Clubs) {
+                    plague_doctor_revealed = true;
+                }
+            }
+        }
+    }
+}
+
+int GameContext::get_monster_effective_damage(const Monster* monster) const {
+    if (!monster) return 0;
+    int base_damage = monster->get_damage();
+    if (type == GameType::EXTENDED && warlord_revealed && !warlord_killed) {
+        if (!(monster->get_face() == face::_JK && monster->get_suit() == suit::Spades)) {
+            base_damage += 2;
+        }
+    }
+    return base_damage;
 }

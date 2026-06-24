@@ -10,7 +10,7 @@ bool AttackMonsterAction::can_execute(const GameContext &ctx, const Card *card) 
         if (ctx.get_weapon()->number_of_monsters() != 0)
         {
             auto monster = static_cast<const Monster *>(card);
-            if (ctx.get_weapon()->last_monster_damage() <= monster->get_damage())
+            if (ctx.get_weapon()->last_monster_damage() <= ctx.get_monster_effective_damage(monster))
                 return false;
         }
         return true;
