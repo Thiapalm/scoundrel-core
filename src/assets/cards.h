@@ -79,7 +79,7 @@ private:
     int damage;
 
 public:
-    Monster(suit my_suit, face my_face) : Card(my_suit, my_face), damage{static_cast<int>(my_face) + 2} {}
+    Monster(suit my_suit, face my_face) : Card(my_suit, my_face), damage{my_face == face::_JK ? 12 : static_cast<int>(my_face) + 2} {}
     Monster(const Monster &) = delete;
     Monster &operator=(const Monster &) = delete;
     Monster(Monster &&) noexcept = default;
