@@ -191,7 +191,7 @@ int ExtendedGameLogic::calculate_loosing_score(GameContext &ctx)
         for (int i = 0; i < room->cards_in_room(); ++i) {
             const auto& card = room->look_card(i);
             if (card.getType() == CardType::Monster) {
-                result += static_cast<const Monster&>(card).get_damage();
+                result += ctx.get_monster_effective_damage(&static_cast<const Monster&>(card));
             }
         }
     }

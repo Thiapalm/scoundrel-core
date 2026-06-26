@@ -35,6 +35,10 @@ private:
     std::vector<std::string> messages;
     std::string last_action_name;
     int last_potion_value{0};
+    bool warlord_revealed{false};
+    bool warlord_killed{false};
+    bool plague_doctor_revealed{false};
+    bool plague_doctor_killed{false};
 
 public:
     GameContext(std::unique_ptr<Dungeon> dg,
@@ -47,7 +51,7 @@ public:
         : dungeon(std::move(dg)), player(std::move(pl)),
           graveyard(std::move(gr)), room(std::move(rm)),
           weapon(nullptr), auth_manager(auth), type(t),
-          available_actions(std::move(ac)) {}
+          available_actions(std::move(ac)) { check_captain_revealed(); }
 
     // Getters
     Dungeon* get_dungeon() const { return dungeon.get(); }
@@ -65,6 +69,19 @@ public:
     const std::vector<std::unique_ptr<Action>> &get_available_actions() const { return available_actions; }
     const std::string& get_last_action_name() const { return last_action_name; }
     int get_last_potion_value() const { return last_potion_value; }
+    
+    bool is_warlord_active() const {
+        return type == GameType::EXTENDED && warlord_revealed && !warlord_killed;
+    }
+    bool is_plague_doctor_active() const {
+        return type == GameType::EXTENDED && plague_doctor_revealed && !plague_doctor_killed;
+    }
+    bool is_warlord(const Monster* m) const {
+        return m && m->get_face() == face::_JK && m->get_suit() == suit::Spades;
+    }
+    void check_captain_revealed();
+    void mark_captain_killed(const Monster* m);
+    int get_monster_effective_damage(const Monster* monster) const;
     
     // Message Queue
     void add_message(const std::string& msg) { messages.push_back(msg); }

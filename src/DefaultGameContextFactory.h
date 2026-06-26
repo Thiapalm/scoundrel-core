@@ -55,6 +55,11 @@ public:
     {
         auto dungeon = std::make_unique<Dungeon>();
         auto remove = remove_cards();
+        if (type == GameType::EXTENDED) {
+            std::erase_if(remove, [](const std::unique_ptr<Card>& c) {
+                return c->get_face() == face::_JK && (c->get_suit() == suit::Spades || c->get_suit() == suit::Clubs);
+            });
+        }
         dungeon->remove(remove);
         dungeon->shuffle(seed);
         

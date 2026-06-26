@@ -40,6 +40,24 @@ Se um consumidor precisar de SDL asset loading, adicione `-DBUILD_WITH_SDL=ON` a
 
 *Nota: Você também pode usar o CMake GUI para configurar o projeto no Windows.*
 
+## Como compilar e rodar os testes
+
+Os testes são compilados automaticamente junto com o projeto usando o GoogleTest. Para executá-los, você usará o `ctest` dentro do diretório de build.
+
+### Linux
+
+```bash
+cd build-core
+ctest --output-on-failure
+```
+
+### Windows
+
+```cmd
+cd build-core
+ctest -C Release --output-on-failure
+```
+
 ## Estrutura do projeto
 
 - `src/`: Código fonte principal.

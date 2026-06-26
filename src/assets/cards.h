@@ -79,7 +79,7 @@ private:
     int damage;
 
 public:
-    Monster(suit my_suit, face my_face) : Card(my_suit, my_face), damage{static_cast<int>(my_face) + 2} {}
+    Monster(suit my_suit, face my_face) : Card(my_suit, my_face), damage{my_face == face::_JK ? 12 : static_cast<int>(my_face) + 2} {}
     Monster(const Monster &) = delete;
     Monster &operator=(const Monster &) = delete;
     Monster(Monster &&) noexcept = default;
@@ -105,6 +105,7 @@ class Weapon : public Card
 private:
     int damage;
     std::stack<std::unique_ptr<Monster>> monsters;
+    std::stack<int> monster_effective_damages;
     int number_of_killed_monsters;
 
 public:
@@ -116,10 +117,10 @@ public:
     Weapon &operator=(Weapon &&) noexcept = default;
     CardType getType() const override { return CardType::Weapon; }
     int weapon_damage();
-    void kill_monster(std::unique_ptr<Monster> enemy);
+    void kill_monster(std::unique_ptr<Monster> enemy, int effective_damage = -1);
     const bool has_monster();
     const int last_monster_damage();
-    const Monster* get_last_killed_monster() const;
+    const Monster *get_last_killed_monster() const;
     std::unique_ptr<Monster> remove_monster();
     int number_of_monsters();
 };
