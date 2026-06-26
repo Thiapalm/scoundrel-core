@@ -1,7 +1,8 @@
 #include "cards.h"
 #include <sstream>
 
-std::string Card::to_string() const {
+std::string Card::to_string() const
+{
     return "[" + transform_face(my_face) + "-" + transform_suit(my_suit) + "]";
 }
 
@@ -31,9 +32,11 @@ int Weapon::weapon_damage()
     return damage;
 }
 
-void Weapon::kill_monster(std::unique_ptr<Monster> enemy)
+void Weapon::kill_monster(std::unique_ptr<Monster> enemy, int effective_damage)
 {
+    const int stored_damage = effective_damage >= 0 ? effective_damage : enemy->get_damage();
     monsters.push(std::move(enemy));
+    monster_effective_damages.push(stored_damage);
 }
 
 const bool Weapon::has_monster()
@@ -43,12 +46,12 @@ const bool Weapon::has_monster()
 
 const int Weapon::last_monster_damage()
 {
-    if (monsters.empty())
+    if (monster_effective_damages.empty())
         return 0;
-    return monsters.top()->get_damage();
+    return monster_effective_damages.top();
 }
 
-const Monster* Weapon::get_last_killed_monster() const
+const Monster *Weapon::get_last_killed_monster() const
 {
     if (monsters.empty())
         return nullptr;
@@ -59,6 +62,10 @@ std::unique_ptr<Monster> Weapon::remove_monster()
 {
     auto last = std::move(monsters.top());
     monsters.pop();
+    if (!monster_effective_damages.empty())
+    {
+        monster_effective_damages.pop();
+    }
     return last;
 }
 
