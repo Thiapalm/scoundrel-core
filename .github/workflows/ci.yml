@@ -9,6 +9,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build and Test (${{ matrix.os }})
@@ -90,7 +93,18 @@ jobs:
       - name: Read version
         id: get_version
         run: |
-          VERSION=$(python3 -c "import re; print(re.search(r'version:\s*[\'\"]?([^\'\"]+)[\'\"]?', open('version.yaml').read()).group(1))")
+          VERSION=$(python3 -c "
+          import re, sys
+          try:
+              content = open('version.yaml').read()
+              match = re.search(r'version:\s*[\'\"]?([^\'\"]+)[\'\"]?', content)
+              if not match:
+                  raise ValueError('No version pattern found in version.yaml')
+              print(match.group(1))
+          except Exception as e:
+              print(f'Error reading version: {e}', file=sys.stderr)
+              sys.exit(1)
+          ")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
@@ -123,7 +137,7 @@ jobs:
           cp temp-windows/ScoundrelCore.lib scoundrel-core/lib/windows/
 
           # Copy assets/locales
-          cp -r assets/locales/*.json scoundrel-core/assets/locales/
+          cp assets/locales/*.json scoundrel-core/assets/locales/
 
           # Copy version.yaml
           cp version.yaml scoundrel-core/
@@ -161,11 +175,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Create a release. If tag already exists, gh release create will use it, otherwise it creates it.
-          # We use --generate-notes to auto-populate release notes with the merged PR/commit history.
-          gh release create v${{ env.VERSION }} scoundrel-core-${{ env.VERSION }}.zip \
-            --title "Release v${{ env.VERSION }}" \
-            --generate-notes
+          # Check if the release already exists to prevent duplicate failures
+          if gh release view v${{ env.VERSION }} > /dev/null 2>&1; then
+            echo "Release v${{ env.VERSION }} already exists. Skipping release creation."
+          else
+            # Create a release. If tag doesn't exist, gh release create will create and push it.
+            # We use --generate-notes to auto-populate release notes with the merged PR/commit history.
+            gh release create v${{ env.VERSION }} scoundrel-core-${{ env.VERSION }}.zip \
+              --title "Release v${{ env.VERSION }}" \
+              --generate-notes
+          fi
 
       - name: Merge back into develop
         env:
@@ -174,9 +193,9 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Fetch and checkout develop branch
-          git fetch origin develop:develop
-          git checkout develop
+          # Fetch and checkout develop branch cleanly tracking origin/develop
+          git fetch origin develop
+          git checkout -B develop origin/develop
           
           # Merge main into develop
           git merge origin/main -m "chore: merge main back into develop [skip ci]"
