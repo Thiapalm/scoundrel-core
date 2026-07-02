@@ -158,11 +158,11 @@ jobs:
 
           ## Integration
 
-          ### include directory
+          ### Include Directory
           Add `include/` to your build system's include paths. 
           For CMake: `target_include_directories(your_target PRIVATE include/)`
 
-          ### lib linking
+          ### Library Linking
           Link with the appropriate static library for your platform:
           - Linux: `lib/linux/libScoundrelCore.a`
           - Windows: `lib/windows/ScoundrelCore.lib`
