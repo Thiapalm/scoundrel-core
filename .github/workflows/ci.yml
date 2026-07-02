@@ -49,7 +49,7 @@ jobs:
         run: |
           mkdir build-core
           cd build-core
-          cmake .. -G "Visual Studio 17 2022" -DBUILD_WITH_SDL=OFF
+          cmake .. -DBUILD_WITH_SDL=OFF
 
       - name: Build (Windows)
         if: matrix.os == 'windows-latest'
