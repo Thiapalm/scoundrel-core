@@ -1,0 +1,204 @@
+name: CI and Release
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure CMake (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p build-core
+          cd build-core
+          cmake .. -DBUILD_WITH_SDL=OFF
+
+      - name: Build (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd build-core
+          cmake --build . --config Release
+
+      - name: Run Tests (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd build-core
+          ctest --output-on-failure
+
+      - name: Configure CMake (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir build-core
+          cd build-core
+          cmake .. -DBUILD_WITH_SDL=OFF
+
+      - name: Build (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd build-core
+          cmake --build . --config Release
+
+      - name: Run Tests (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd build-core
+          ctest -C Release --output-on-failure
+
+      - name: Upload Linux Library Artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: libScoundrelCore-linux
+          path: build-core/libScoundrelCore.a
+
+      - name: Upload Windows Library Artifact
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScoundrelCore-windows
+          path: build-core/Release/ScoundrelCore.lib
+
+  release:
+    name: Package and Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: get_version
+        run: |
+          VERSION=$(python3 -c "
+          import re, sys
+          try:
+              content = open('version.yaml').read()
+              match = re.search(r'version:\s*[\'\"]?([^\'\"]+)[\'\"]?', content)
+              if not match:
+                  raise ValueError('No version pattern found in version.yaml')
+              print(match.group(1))
+          except Exception as e:
+              print(f'Error reading version: {e}', file=sys.stderr)
+              sys.exit(1)
+          ")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download Linux Library
+        uses: actions/download-artifact@v4
+        with:
+          name: libScoundrelCore-linux
+          path: temp-linux
+
+      - name: Download Windows Library
+        uses: actions/download-artifact@v4
+        with:
+          name: ScoundrelCore-windows
+          path: temp-windows
+
+      - name: Generate Versioned Package
+        run: |
+          mkdir -p scoundrel-core/include
+          mkdir -p scoundrel-core/lib/linux
+          mkdir -p scoundrel-core/lib/windows
+          mkdir -p scoundrel-core/assets/locales
+
+          # Copy headers preserving directory structure
+          cd src
+          find . -name "*.h" -exec cp --parents {} ../scoundrel-core/include/ \;
+          cd ..
+
+          # Copy libraries from downloaded artifacts
+          cp temp-linux/libScoundrelCore.a scoundrel-core/lib/linux/
+          cp temp-windows/ScoundrelCore.lib scoundrel-core/lib/windows/
+
+          # Copy assets/locales
+          cp assets/locales/*.json scoundrel-core/assets/locales/
+
+          # Copy version.yaml
+          cp version.yaml scoundrel-core/
+
+          # Create README.md
+          cat << 'EOF' > scoundrel-core/README.md
+          # Scoundrel Core Precompiled Library
+
+          This package contains the precompiled `ScoundrelCore` static library for both Linux and Windows, alongside all necessary headers and localization assets.
+
+          ## Contents
+
+          - `include/`: C++ header files. Add this path to your compiler's include search paths.
+          - `lib/linux/libScoundrelCore.a`: Precompiled static library for Linux (x64).
+          - `lib/windows/ScoundrelCore.lib`: Precompiled static library for Windows (x64).
+          - `assets/locales/`: Localization JSON files (en.json, es.json, pt.json) used by the engine.
+          - `version.yaml`: Version metadata file.
+
+          ## Integration
+
+          ### Include Directory
+          Add `include/` to your build system's include paths. 
+          For CMake: `target_include_directories(your_target PRIVATE include/)`
+
+          ### Library Linking
+          Link with the appropriate static library for your platform:
+          - Linux: `lib/linux/libScoundrelCore.a`
+          - Windows: `lib/windows/ScoundrelCore.lib`
+          EOF
+
+          # Create zip package
+          zip -r scoundrel-core-${{ env.VERSION }}.zip scoundrel-core/
+
+      - name: Create Tag and Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if the release already exists to prevent duplicate failures
+          if gh release view v${{ env.VERSION }} > /dev/null 2>&1; then
+            echo "Release v${{ env.VERSION }} already exists. Skipping release creation."
+          else
+            # Create a release. If tag doesn't exist, gh release create will create and push it.
+            # We use --generate-notes to auto-populate release notes with the merged PR/commit history.
+            gh release create v${{ env.VERSION }} scoundrel-core-${{ env.VERSION }}.zip \
+              --title "Release v${{ env.VERSION }}" \
+              --generate-notes
+          fi
+
+      - name: Merge back into develop
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Fetch and checkout develop branch cleanly tracking origin/develop
+          git fetch origin develop
+          git checkout -B develop origin/develop
+          
+          # Merge main into develop
+          git merge origin/main -m "chore: merge main back into develop [skip ci]"
+          
+          # Push changes back to origin
+          git push origin develop
