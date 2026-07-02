@@ -102,5 +102,6 @@ endif()
 
 # Export for tests and other modules
 if(NOT ANDROID AND NOT DEFINED BUILD_AS_SUBMODULE)
+    enable_testing()
     add_subdirectory(tests)
 endif()
